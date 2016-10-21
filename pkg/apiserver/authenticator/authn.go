@@ -47,6 +47,7 @@ type AuthenticatorConfig struct {
 	ServiceAccountLookup        bool
 	ServiceAccountTokenGetter   serviceaccount.ServiceAccountTokenGetter
 	KeystoneURL                 string
+	KeystoneInsecureTLS         bool
 	WebhookTokenAuthnConfigFile string
 	WebhookTokenAuthnCacheTTL   time.Duration
 }
@@ -62,6 +63,13 @@ func New(config AuthenticatorConfig) (authenticator.Request, error) {
 			return nil, err
 		}
 		authenticators = append(authenticators, basicAuth)
+	}
+	if len(config.KeystoneURL) > 0 {
+		keystoneAuth, err := newAuthenticatorFromKeystoneURL(config.KeystoneURL, config.KeystoneInsecureTLS)
+		if err != nil {
+			return nil, nil, err
+		}
+		authenticators = append(authenticators, keystoneAuth)
 	}
 
 	if len(config.ClientCAFile) > 0 {
@@ -94,14 +102,6 @@ func New(config AuthenticatorConfig) (authenticator.Request, error) {
 			return nil, err
 		}
 		authenticators = append(authenticators, serviceAccountAuth)
-	}
-
-	if len(config.KeystoneURL) > 0 {
-		keystoneAuth, err := newAuthenticatorFromKeystoneURL(config.KeystoneURL)
-		if err != nil {
-			return nil, err
-		}
-		authenticators = append(authenticators, keystoneAuth)
 	}
 
 	if len(config.WebhookTokenAuthnConfigFile) > 0 {
@@ -191,8 +191,8 @@ func newAuthenticatorFromClientCAFile(clientCAFile string) (authenticator.Reques
 }
 
 // newAuthenticatorFromTokenFile returns an authenticator.Request or an error
-func newAuthenticatorFromKeystoneURL(keystoneURL string) (authenticator.Request, error) {
-	keystoneAuthenticator, err := keystone.NewKeystoneAuthenticator(keystoneURL)
+func newAuthenticatorFromKeystoneURL(keystoneURL string, keystoneInsecureTLs bool) (authenticator.Request, error) {
+	keystoneAuthenticator, err := keystone.NewKeystoneAuthenticator(keystoneURL, keystoneInsecureTLs)
 	if err != nil {
 		return nil, err
 	}

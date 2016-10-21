@@ -94,15 +94,16 @@ func Run(s *genericoptions.ServerRunOptions) error {
 	}
 
 	authenticator, err := authenticator.New(authenticator.AuthenticatorConfig{
-		BasicAuthFile:     s.BasicAuthFile,
-		ClientCAFile:      s.ClientCAFile,
-		TokenAuthFile:     s.TokenAuthFile,
-		OIDCIssuerURL:     s.OIDCIssuerURL,
-		OIDCClientID:      s.OIDCClientID,
-		OIDCCAFile:        s.OIDCCAFile,
-		OIDCUsernameClaim: s.OIDCUsernameClaim,
-		OIDCGroupsClaim:   s.OIDCGroupsClaim,
-		KeystoneURL:       s.KeystoneURL,
+		BasicAuthFile:        s.BasicAuthFile,
+		ClientCAFile:         s.ClientCAFile,
+		TokenAuthFile:        s.TokenAuthFile,
+		OIDCIssuerURL:        s.OIDCIssuerURL,
+		OIDCClientID:         s.OIDCClientID,
+		OIDCCAFile:           s.OIDCCAFile,
+		OIDCUsernameClaim:    s.OIDCUsernameClaim,
+		OIDCGroupsClaim:      s.OIDCGroupsClaim,
+		KeystoneURL:          s.KeystoneURL,
+		KeystoneInsecureTLS:  s.KeystoneInsecureTLS,
 	})
 	if err != nil {
 		glog.Fatalf("Invalid Authentication Config: %v", err)
