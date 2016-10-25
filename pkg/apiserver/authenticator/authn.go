@@ -67,7 +67,7 @@ func New(config AuthenticatorConfig) (authenticator.Request, error) {
 	if len(config.KeystoneURL) > 0 {
 		keystoneAuth, err := newAuthenticatorFromKeystoneURL(config.KeystoneURL, config.KeystoneInsecureTLS)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		authenticators = append(authenticators, keystoneAuth)
 	}
