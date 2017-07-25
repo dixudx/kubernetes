@@ -75,7 +75,7 @@ scheduling.k8s.io/v1alpha1 \
 settings.k8s.io/v1alpha1 \
 storage.k8s.io/v1beta1 \
 storage.k8s.io/v1 \
-apis/apiextensions.k8s.io/v1beta1 \
+apiextensions.k8s.io/v1beta1 \
 apiregistration.k8s.io/v1beta1 \
 }"
 
