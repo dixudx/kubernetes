@@ -22,7 +22,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/kubernetes/pkg/api"
-	apitesting "k8s.io/kubernetes/pkg/api/testing"
 
 	// install all api groups for testing
 	_ "k8s.io/kubernetes/pkg/api/testapi"
@@ -136,11 +135,46 @@ func TestNamespaceFinalizeStrategy(t *testing.T) {
 	}
 }
 
-func TestSelectableFieldLabelConversions(t *testing.T) {
-	apitesting.TestSelectableFieldLabelConversionsOfKind(t,
-		api.Registry.GroupOrDie(api.GroupName).GroupVersion.String(),
-		"Namespace",
-		NamespaceToSelectableFields(&api.Namespace{}),
-		map[string]string{"name": "metadata.name"},
-	)
+func TestNamespaceToSelectableFields(t *testing.T) {
+	expectedStr := "metadata.name=foo,name=foo,status.phase=ph1"
+	ns := api.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "foo",
+		},
+		Status: api.NamespaceStatus{
+			Phase: api.NamespacePhase("ph1"),
+		},
+	}
+
+	nsFieldsSet := NamespaceToSelectableFields(&ns)
+	if nsFieldsSet.String() != expectedStr {
+		t.Errorf("unexpected fieldSelector %q for Namespace", nsFieldsSet.String())
+	}
+
+	testcases := []struct {
+		ExpectedKey   string
+		ExpectedValue string
+	}{
+		{
+			ExpectedKey:   "metadata.name",
+			ExpectedValue: "foo",
+		},
+		{
+			ExpectedKey:   "name",
+			ExpectedValue: "foo",
+		},
+		{
+			ExpectedKey:   "status.phase",
+			ExpectedValue: "ph1",
+		},
+	}
+
+	for _, tc := range testcases {
+		if !nsFieldsSet.Has(tc.ExpectedKey) {
+			t.Errorf("missing Namespace fieldSelector %q", tc.ExpectedKey)
+		}
+		if nsFieldsSet.Get(tc.ExpectedKey) != tc.ExpectedValue {
+			t.Errorf("Namespace filedSelector %q has got unexpected value %q", tc.ExpectedKey, nsFieldsSet.Get(tc.ExpectedKey))
+		}
+	}
 }

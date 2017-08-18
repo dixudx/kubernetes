@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/kubernetes/pkg/api"
-	apitesting "k8s.io/kubernetes/pkg/api/testing"
 
 	// install all api groups for testing
 	_ "k8s.io/kubernetes/pkg/api/testapi"
@@ -104,11 +103,40 @@ func TestExportSecret(t *testing.T) {
 	}
 }
 
-func TestSelectableFieldLabelConversions(t *testing.T) {
-	apitesting.TestSelectableFieldLabelConversionsOfKind(t,
-		api.Registry.GroupOrDie(api.GroupName).GroupVersion.String(),
-		"Secret",
-		SelectableFields(&api.Secret{}),
-		nil,
-	)
+func TestSecretToSelectableFields(t *testing.T) {
+	expectedStr := "metadata.name=foo,type=type1"
+	secret := api.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "foo",
+		},
+		Type: api.SecretType("type1"),
+	}
+
+	secretFieldsSet := SecretToSelectableFields(&secret)
+	if secretFieldsSet.String() != expectedStr {
+		t.Errorf("unexpected fieldSelector %q for Secret", secretFieldsSet.String())
+	}
+
+	testcases := []struct {
+		ExpectedKey   string
+		ExpectedValue string
+	}{
+		{
+			ExpectedKey:   "metadata.name",
+			ExpectedValue: "foo",
+		},
+		{
+			ExpectedKey:   "type",
+			ExpectedValue: "type1",
+		},
+	}
+
+	for _, tc := range testcases {
+		if !secretFieldsSet.Has(tc.ExpectedKey) {
+			t.Errorf("missing Secret fieldSelector %q", tc.ExpectedKey)
+		}
+		if secretFieldsSet.Get(tc.ExpectedKey) != tc.ExpectedValue {
+			t.Errorf("Secret filedSelector %q has got unexpected value %q", tc.ExpectedKey, secretFieldsSet.Get(tc.ExpectedKey))
+		}
+	}
 }

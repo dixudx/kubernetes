@@ -137,6 +137,16 @@ func (namespaceFinalizeStrategy) PrepareForUpdate(ctx genericapirequest.Context,
 	newNamespace.Status = oldNamespace.Status
 }
 
+// NamespaceToSelectableFields returns a field set that represents the object
+func NamespaceToSelectableFields(namespace *api.Namespace) fields.Set {
+	specificFieldsSet := fields.Set{
+		"status.phase": string(namespace.Status.Phase),
+		// This is a bug, but we need to support it for backward compatibility.
+		"name": namespace.Name,
+	}
+	return generic.AddObjectMetaFieldsSet(specificFieldsSet, &namespace.ObjectMeta, false)
+}
+
 // GetAttrs returns labels and fields of a given object for filtering purposes.
 func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, bool, error) {
 	namespaceObj, ok := obj.(*api.Namespace)
@@ -153,15 +163,4 @@ func MatchNamespace(label labels.Selector, field fields.Selector) apistorage.Sel
 		Field:    field,
 		GetAttrs: GetAttrs,
 	}
-}
-
-// NamespaceToSelectableFields returns a field set that represents the object
-func NamespaceToSelectableFields(namespace *api.Namespace) fields.Set {
-	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&namespace.ObjectMeta, false)
-	specificFieldsSet := fields.Set{
-		"status.phase": string(namespace.Status.Phase),
-		// This is a bug, but we need to support it for backward compatibility.
-		"name": namespace.Name,
-	}
-	return generic.MergeFieldsSets(objectMetaFieldsSet, specificFieldsSet)
 }

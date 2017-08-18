@@ -1,36 +1,45 @@
-/*
-Copyright 2015 The Kubernetes Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package persistentvolume
 
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/api"
-	apitesting "k8s.io/kubernetes/pkg/api/testing"
-
-	// install all api groups for testing
-	_ "k8s.io/kubernetes/pkg/api/testapi"
 )
 
-func TestSelectableFieldLabelConversions(t *testing.T) {
-	apitesting.TestSelectableFieldLabelConversionsOfKind(t,
-		api.Registry.GroupOrDie(api.GroupName).GroupVersion.String(),
-		"PersistentVolume",
-		PersistentVolumeToSelectableFields(&api.PersistentVolume{}),
-		map[string]string{"name": "metadata.name"},
-	)
+func TestPersistentVolumeToSelectableFields(t *testing.T) {
+	expectedStr := "metadata.name=foo,name=foo"
+	pv := api.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "foo",
+		},
+	}
+
+	pvFieldsSet := PersistentVolumeToSelectableFields(&pv)
+	if pvFieldsSet.String() != expectedStr {
+		t.Errorf("unexpected fieldSelector %q for PersistentVolume", pvFieldsSet.String())
+	}
+
+	testcases := []struct {
+		ExpectedKey   string
+		ExpectedValue string
+	}{
+		{
+			ExpectedKey:   "metadata.name",
+			ExpectedValue: "foo",
+		},
+		{
+			ExpectedKey:   "name",
+			ExpectedValue: "foo",
+		},
+	}
+
+	for _, tc := range testcases {
+		if !pvFieldsSet.Has(tc.ExpectedKey) {
+			t.Errorf("missing PersistentVolume fieldSelector %q", tc.ExpectedKey)
+		}
+		if pvFieldsSet.Get(tc.ExpectedKey) != tc.ExpectedValue {
+			t.Errorf("PersistentVolume filedSelector %q has got unexpected value %q", tc.ExpectedKey, pvFieldsSet.Get(tc.ExpectedKey))
+		}
+	}
 }

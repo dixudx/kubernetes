@@ -19,18 +19,43 @@ package persistentvolumeclaim
 import (
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/api"
-	apitesting "k8s.io/kubernetes/pkg/api/testing"
-
-	// install all api groups for testing
-	_ "k8s.io/kubernetes/pkg/api/testapi"
 )
 
-func TestSelectableFieldLabelConversions(t *testing.T) {
-	apitesting.TestSelectableFieldLabelConversionsOfKind(t,
-		api.Registry.GroupOrDie(api.GroupName).GroupVersion.String(),
-		"PersistentVolumeClaim",
-		PersistentVolumeClaimToSelectableFields(&api.PersistentVolumeClaim{}),
-		map[string]string{"name": "metadata.name"},
-	)
+func TestPersistentVolumeClaimToSelectableFields(t *testing.T) {
+	expectedStr := "metadata.name=foo,name=foo"
+	pvc := api.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "foo",
+		},
+	}
+
+	pvcFieldsSet := PersistentVolumeClaimToSelectableFields(&pvc)
+	if pvcFieldsSet.String() != expectedStr {
+		t.Errorf("unexpected fieldSelector %q for PersistentVolumeClaim", pvcFieldsSet.String())
+	}
+
+	testcases := []struct {
+		ExpectedKey   string
+		ExpectedValue string
+	}{
+		{
+			ExpectedKey:   "metadata.name",
+			ExpectedValue: "foo",
+		},
+		{
+			ExpectedKey:   "name",
+			ExpectedValue: "foo",
+		},
+	}
+
+	for _, tc := range testcases {
+		if !pvcFieldsSet.Has(tc.ExpectedKey) {
+			t.Errorf("missing PersistentVolumeClaim fieldSelector %q", tc.ExpectedKey)
+		}
+		if pvcFieldsSet.Get(tc.ExpectedKey) != tc.ExpectedValue {
+			t.Errorf("PersistentVolumeClaim filedSelector %q has got unexpected value %q", tc.ExpectedKey, pvcFieldsSet.Get(tc.ExpectedKey))
+		}
+	}
 }

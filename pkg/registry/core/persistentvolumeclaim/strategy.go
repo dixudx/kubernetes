@@ -97,6 +97,15 @@ func (persistentvolumeclaimStatusStrategy) ValidateUpdate(ctx genericapirequest.
 	return validation.ValidatePersistentVolumeClaimStatusUpdate(obj.(*api.PersistentVolumeClaim), old.(*api.PersistentVolumeClaim))
 }
 
+// PersistentVolumeClaimToSelectableFields returns a field set that represents the object
+func PersistentVolumeClaimToSelectableFields(pvClaim *api.PersistentVolumeClaim) fields.Set {
+	specificFieldsSet := fields.Set{
+		// This is a bug, but we need to support it for backward compatibility.
+		"name": pvClaim.Name,
+	}
+	return generic.AddObjectMetaFieldsSet(specificFieldsSet, &pvClaim.ObjectMeta, false)
+}
+
 // GetAttrs returns labels and fields of a given object for filtering purposes.
 func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, bool, error) {
 	persistentvolumeclaimObj, ok := obj.(*api.PersistentVolumeClaim)
@@ -113,14 +122,4 @@ func MatchPersistentVolumeClaim(label labels.Selector, field fields.Selector) st
 		Field:    field,
 		GetAttrs: GetAttrs,
 	}
-}
-
-// PersistentVolumeClaimToSelectableFields returns a field set that represents the object
-func PersistentVolumeClaimToSelectableFields(persistentvolumeclaim *api.PersistentVolumeClaim) fields.Set {
-	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&persistentvolumeclaim.ObjectMeta, true)
-	specificFieldsSet := fields.Set{
-		// This is a bug, but we need to support it for backward compatibility.
-		"name": persistentvolumeclaim.Name,
-	}
-	return generic.MergeFieldsSets(objectMetaFieldsSet, specificFieldsSet)
 }

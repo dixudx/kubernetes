@@ -101,6 +101,16 @@ func (persistentvolumeStatusStrategy) ValidateUpdate(ctx genericapirequest.Conte
 	return validation.ValidatePersistentVolumeStatusUpdate(obj.(*api.PersistentVolume), old.(*api.PersistentVolume))
 }
 
+// PersistentVolumeToSelectableFields returns a field set that represents the object
+func PersistentVolumeToSelectableFields(persistentvolume *api.PersistentVolume) fields.Set {
+	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&persistentvolume.ObjectMeta, false)
+	specificFieldsSet := fields.Set{
+		// This is a bug, but we need to support it for backward compatibility.
+		"name": persistentvolume.Name,
+	}
+	return generic.MergeFieldsSets(objectMetaFieldsSet, specificFieldsSet)
+}
+
 // GetAttrs returns labels and fields of a given object for filtering purposes.
 func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, bool, error) {
 	persistentvolumeObj, ok := obj.(*api.PersistentVolume)
@@ -110,21 +120,11 @@ func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, bool, error) {
 	return labels.Set(persistentvolumeObj.Labels), PersistentVolumeToSelectableFields(persistentvolumeObj), persistentvolumeObj.Initializers != nil, nil
 }
 
-// MatchPersistentVolume returns a generic matcher for a given label and field selector.
+// MatchPersistentVolumes returns a generic matcher for a given label and field selector.
 func MatchPersistentVolumes(label labels.Selector, field fields.Selector) storage.SelectionPredicate {
 	return storage.SelectionPredicate{
 		Label:    label,
 		Field:    field,
 		GetAttrs: GetAttrs,
 	}
-}
-
-// PersistentVolumeToSelectableFields returns a field set that represents the object
-func PersistentVolumeToSelectableFields(persistentvolume *api.PersistentVolume) fields.Set {
-	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&persistentvolume.ObjectMeta, false)
-	specificFieldsSet := fields.Set{
-		// This is a bug, but we need to support it for backward compatibility.
-		"name": persistentvolume.Name,
-	}
-	return generic.MergeFieldsSets(objectMetaFieldsSet, specificFieldsSet)
 }

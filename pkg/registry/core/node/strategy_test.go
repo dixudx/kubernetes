@@ -21,8 +21,9 @@ import (
 
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/kubernetes/pkg/api"
-	apitesting "k8s.io/kubernetes/pkg/api/testing"
 
 	// install all api groups for testing
 	_ "k8s.io/kubernetes/pkg/api/testapi"
@@ -49,11 +50,42 @@ func TestMatchNode(t *testing.T) {
 	}
 }
 
-func TestSelectableFieldLabelConversions(t *testing.T) {
-	apitesting.TestSelectableFieldLabelConversionsOfKind(t,
-		api.Registry.GroupOrDie(api.GroupName).GroupVersion.String(),
-		"Node",
-		NodeToSelectableFields(&api.Node{}),
-		nil,
-	)
+func TestNodeToSelectableFields(t *testing.T) {
+	expectedStr := "metadata.name=foo,spec.unschedulable=false"
+	node := api.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "foo",
+		},
+		Spec: api.NodeSpec{
+			Unschedulable: false,
+		},
+	}
+
+	nodeFieldsSet := NodeToSelectableFields(&node)
+	if nodeFieldsSet.String() != expectedStr {
+		t.Errorf("unexpected fieldSelector %q for Node", nodeFieldsSet.String())
+	}
+
+	testcases := []struct {
+		ExpectedKey   string
+		ExpectedValue string
+	}{
+		{
+			ExpectedKey:   "metadata.name",
+			ExpectedValue: "foo",
+		},
+		{
+			ExpectedKey:   "spec.unschedulable",
+			ExpectedValue: "false",
+		},
+	}
+
+	for _, tc := range testcases {
+		if !nodeFieldsSet.Has(tc.ExpectedKey) {
+			t.Errorf("missing Node fieldSelector %q", tc.ExpectedKey)
+		}
+		if nodeFieldsSet.Get(tc.ExpectedKey) != tc.ExpectedValue {
+			t.Errorf("Node filedSelector %q has got unexpected value %q", tc.ExpectedKey, nodeFieldsSet.Get(tc.ExpectedKey))
+		}
+	}
 }

@@ -23,7 +23,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/kubernetes/pkg/api"
-	apitesting "k8s.io/kubernetes/pkg/api/testing"
 
 	// install all api groups for testing
 	_ "k8s.io/kubernetes/pkg/api/testapi"
@@ -146,15 +145,6 @@ func TestControllerStatusStrategy(t *testing.T) {
 	}
 }
 
-func TestSelectableFieldLabelConversions(t *testing.T) {
-	apitesting.TestSelectableFieldLabelConversionsOfKind(t,
-		api.Registry.GroupOrDie(api.GroupName).GroupVersion.String(),
-		"ReplicationController",
-		ControllerToSelectableFields(&api.ReplicationController{}),
-		nil,
-	)
-}
-
 func TestValidateUpdate(t *testing.T) {
 	ctx := genericapirequest.NewDefaultContext()
 	validSelector := map[string]string{"a": "b"}
@@ -210,5 +200,50 @@ func TestValidateUpdate(t *testing.T) {
 	}
 	if !strings.Contains(errs[0].Error(), "selector") {
 		t.Fatalf("expected error related to the selector")
+	}
+}
+
+func TestControllerToSelectableFields(t *testing.T) {
+	expectedStr := "metadata.name=foo,metadata.namespace=bar,status.replicas=1"
+	rc := api.ReplicationController{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: "bar",
+		},
+		Status: api.ReplicationControllerStatus{
+			Replicas: 1,
+		},
+	}
+
+	rcFieldsSet := ControllerToSelectableFields(&rc)
+	if rcFieldsSet.String() != expectedStr {
+		t.Errorf("unexpected fieldSelector %q for ReplicationController", rcFieldsSet.String())
+	}
+
+	testcases := []struct {
+		ExpectedKey   string
+		ExpectedValue string
+	}{
+		{
+			ExpectedKey:   "metadata.name",
+			ExpectedValue: "foo",
+		},
+		{
+			ExpectedKey:   "metadata.namespace",
+			ExpectedValue: "bar",
+		},
+		{
+			ExpectedKey:   "status.replicas",
+			ExpectedValue: "1",
+		},
+	}
+
+	for _, tc := range testcases {
+		if !rcFieldsSet.Has(tc.ExpectedKey) {
+			t.Errorf("missing ReplicationController fieldSelector %q", tc.ExpectedKey)
+		}
+		if rcFieldsSet.Get(tc.ExpectedKey) != tc.ExpectedValue {
+			t.Errorf("ReplicationController filedSelector %q has got unexpected value %q", tc.ExpectedKey, rcFieldsSet.Get(tc.ExpectedKey))
+		}
 	}
 }

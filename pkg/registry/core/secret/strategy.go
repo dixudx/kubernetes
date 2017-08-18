@@ -96,13 +96,21 @@ func (s strategy) Export(ctx genericapirequest.Context, obj runtime.Object, exac
 	return nil
 }
 
+// SecretToSelectableFields returns a field set that represents the object
+func SecretToSelectableFields(secret *api.Secret) fields.Set {
+	specificFieldsSet := fields.Set{
+		"type": string(secret.Type),
+	}
+	return generic.AddObjectMetaFieldsSet(specificFieldsSet, &secret.ObjectMeta, false)
+}
+
 // GetAttrs returns labels and fields of a given object for filtering purposes.
 func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, bool, error) {
 	secret, ok := obj.(*api.Secret)
 	if !ok {
 		return nil, nil, false, fmt.Errorf("not a secret")
 	}
-	return labels.Set(secret.Labels), SelectableFields(secret), secret.Initializers != nil, nil
+	return labels.Set(secret.Labels), SecretToSelectableFields(secret), secret.Initializers != nil, nil
 }
 
 // Matcher returns a generic matcher for a given label and field selector.

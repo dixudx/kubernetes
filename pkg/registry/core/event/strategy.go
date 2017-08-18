@@ -77,6 +77,23 @@ func (eventStrategy) AllowUnconditionalUpdate() bool {
 	return true
 }
 
+// EventToSelectableFields returns a field set that represents the object
+func EventToSelectableFields(event *api.Event) fields.Set {
+	specificFieldsSet := fields.Set{
+		"involvedObject.kind":            event.InvolvedObject.Kind,
+		"involvedObject.namespace":       event.InvolvedObject.Namespace,
+		"involvedObject.name":            event.InvolvedObject.Name,
+		"involvedObject.uid":             string(event.InvolvedObject.UID),
+		"involvedObject.apiVersion":      event.InvolvedObject.APIVersion,
+		"involvedObject.resourceVersion": event.InvolvedObject.ResourceVersion,
+		"involvedObject.fieldPath":       event.InvolvedObject.FieldPath,
+		"reason":                         event.Reason,
+		"source":                         event.Source.Component,
+		"type":                           event.Type,
+	}
+	return generic.AddObjectMetaFieldsSet(specificFieldsSet, &event.ObjectMeta, true)
+}
+
 // GetAttrs returns labels and fields of a given object for filtering purposes.
 func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, bool, error) {
 	event, ok := obj.(*api.Event)
@@ -92,22 +109,4 @@ func MatchEvent(label labels.Selector, field fields.Selector) storage.SelectionP
 		Field:    field,
 		GetAttrs: GetAttrs,
 	}
-}
-
-// EventToSelectableFields returns a field set that represents the object
-func EventToSelectableFields(event *api.Event) fields.Set {
-	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&event.ObjectMeta, true)
-	specificFieldsSet := fields.Set{
-		"involvedObject.kind":            event.InvolvedObject.Kind,
-		"involvedObject.namespace":       event.InvolvedObject.Namespace,
-		"involvedObject.name":            event.InvolvedObject.Name,
-		"involvedObject.uid":             string(event.InvolvedObject.UID),
-		"involvedObject.apiVersion":      event.InvolvedObject.APIVersion,
-		"involvedObject.resourceVersion": event.InvolvedObject.ResourceVersion,
-		"involvedObject.fieldPath":       event.InvolvedObject.FieldPath,
-		"reason":                         event.Reason,
-		"source":                         event.Source.Component,
-		"type":                           event.Type,
-	}
-	return generic.MergeFieldsSets(objectMetaFieldsSet, specificFieldsSet)
 }

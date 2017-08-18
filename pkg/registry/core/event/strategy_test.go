@@ -22,26 +22,13 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/kubernetes/pkg/api"
-	apitesting "k8s.io/kubernetes/pkg/api/testing"
 
 	// install all api groups for testing
 	_ "k8s.io/kubernetes/pkg/api/testapi"
 )
-
-func testEvent(name string) *api.Event {
-	return &api.Event{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: "default",
-		},
-		InvolvedObject: api.ObjectReference{
-			Namespace: "default",
-		},
-		Reason: "forTesting",
-	}
-}
 
 func TestGetAttrs(t *testing.T) {
 	eventA := &api.Event{
@@ -82,12 +69,92 @@ func TestGetAttrs(t *testing.T) {
 	}
 }
 
-func TestSelectableFieldLabelConversions(t *testing.T) {
-	fset := EventToSelectableFields(&api.Event{})
-	apitesting.TestSelectableFieldLabelConversionsOfKind(t,
-		api.Registry.GroupOrDie(api.GroupName).GroupVersion.String(),
-		"Event",
-		fset,
-		nil,
-	)
+func TestEventToSelectableFields(t *testing.T) {
+	expectedStr := "involvedObject.apiVersion=foo,involvedObject.fieldPath=bar,involvedObject.kind=baz,involvedObject.name=name1,involvedObject.namespace=ns1,involvedObject.resourceVersion=1,involvedObject.uid=uid1,metadata.name=foo,metadata.namespace=ns1,reason=reason1,source=test,type=type1"
+	event := api.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: "ns1",
+		},
+		InvolvedObject: api.ObjectReference{
+			APIVersion:      "foo",
+			FieldPath:       "bar",
+			Kind:            "baz",
+			Name:            "name1",
+			Namespace:       "ns1",
+			ResourceVersion: "1",
+			UID:             types.UID("uid1"),
+		},
+		Reason: "reason1",
+		Source: api.EventSource{Component: "test"},
+		Type:   "type1",
+	}
+
+	eventFieldsSet := EventToSelectableFields(&event)
+	if eventFieldsSet.String() != expectedStr {
+		t.Errorf("unexpected fieldSelector %q for Event", eventFieldsSet.String())
+	}
+
+	testcases := []struct {
+		ExpectedKey   string
+		ExpectedValue string
+	}{
+		{
+			ExpectedKey:   "involvedObject.apiVersion",
+			ExpectedValue: "foo",
+		},
+		{
+			ExpectedKey:   "involvedObject.fieldPath",
+			ExpectedValue: "bar",
+		},
+		{
+			ExpectedKey:   "involvedObject.kind",
+			ExpectedValue: "baz",
+		},
+		{
+			ExpectedKey:   "involvedObject.name",
+			ExpectedValue: "name1",
+		},
+		{
+			ExpectedKey:   "involvedObject.namespace",
+			ExpectedValue: "ns1",
+		},
+		{
+			ExpectedKey:   "involvedObject.resourceVersion",
+			ExpectedValue: "1",
+		},
+		{
+			ExpectedKey:   "involvedObject.uid",
+			ExpectedValue: "uid1",
+		},
+		{
+			ExpectedKey:   "metadata.name",
+			ExpectedValue: "foo",
+		},
+		{
+			ExpectedKey:   "metadata.namespace",
+			ExpectedValue: "ns1",
+		},
+		{
+			ExpectedKey:   "reason",
+			ExpectedValue: "reason1",
+		},
+		{
+			ExpectedKey:   "source",
+			ExpectedValue: "test",
+		},
+		{
+			ExpectedKey:   "type",
+			ExpectedValue: "type1",
+		},
+	}
+
+	for _, tc := range testcases {
+		if !eventFieldsSet.Has(tc.ExpectedKey) {
+			t.Errorf("missing Event fieldSelector %q", tc.ExpectedKey)
+		}
+		if eventFieldsSet.Get(tc.ExpectedKey) != tc.ExpectedValue {
+			t.Errorf("Event filedSelector %q has got unexpected value %q", tc.ExpectedKey, eventFieldsSet.Get(tc.ExpectedKey))
+		}
+	}
 }

@@ -30,12 +30,106 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/kubernetes/pkg/api"
-	apitesting "k8s.io/kubernetes/pkg/api/testing"
+	//apitesting "k8s.io/kubernetes/pkg/api/testing"
 	"k8s.io/kubernetes/pkg/kubelet/client"
 
 	// install all api groups for testing
 	_ "k8s.io/kubernetes/pkg/api/testapi"
 )
+
+func TestPodToSelectableFields(t *testing.T) {
+	expectedStr := `metadata.annotations={"a":"b","b":"c"},metadata.labels={"a":"b","b":"c"},metadata.name=foo,metadata.namespace=bar,metadata.uid=baz,spec.nodeName=node1,spec.restartPolicy=Always,spec.schedulerName=default-scheduler,spec.serviceAccountName=svc1,status.hostIP=1.2.3.4,status.phase=ph1,status.podIP=4.5.6.7`
+	pod := api.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "foo",
+			Namespace: "bar",
+			UID:       types.UID("baz"),
+			Annotations: map[string]string{
+				"b": "c",
+				"a": "b",
+			},
+			Labels: map[string]string{
+				"a": "b",
+				"b": "c",
+			},
+		},
+		Spec: api.PodSpec{
+			NodeName:           "node1",
+			RestartPolicy:      api.RestartPolicyAlways,
+			ServiceAccountName: "svc1",
+			SchedulerName:      "default-scheduler",
+		},
+		Status: api.PodStatus{
+			HostIP: "1.2.3.4",
+			PodIP:  "4.5.6.7",
+			Phase:  api.PodPhase("ph1"),
+		},
+	}
+
+	podFieldsSet := PodToSelectableFields(&pod)
+	if podFieldsSet.String() != expectedStr {
+		t.Errorf("unexpected fieldSelector %q for Pod", podFieldsSet.String())
+	}
+
+	testcases := []struct {
+		ExpectedKey   string
+		ExpectedValue string
+	}{
+		{
+			ExpectedKey:   "metadata.annotations",
+			ExpectedValue: `{"a":"b","b":"c"}`,
+		},
+		{
+			ExpectedKey:   "metadata.labels",
+			ExpectedValue: `{"a":"b","b":"c"}`,
+		},
+		{
+			ExpectedKey:   "metadata.name",
+			ExpectedValue: "foo",
+		},
+		{
+			ExpectedKey:   "metadata.namespace",
+			ExpectedValue: "bar",
+		},
+		{
+			ExpectedKey:   "metadata.uid",
+			ExpectedValue: "baz",
+		},
+		{
+			ExpectedKey:   "spec.nodeName",
+			ExpectedValue: "node1",
+		},
+		{
+			ExpectedKey:   "spec.restartPolicy",
+			ExpectedValue: "Always",
+		},
+		{
+			ExpectedKey:   "spec.serviceAccountName",
+			ExpectedValue: "svc1",
+		},
+		{
+			ExpectedKey:   "status.hostIP",
+			ExpectedValue: "1.2.3.4",
+		},
+		{
+			ExpectedKey:   "status.phase",
+			ExpectedValue: "ph1",
+		},
+		{
+			ExpectedKey:   "status.podIP",
+			ExpectedValue: "4.5.6.7",
+		},
+	}
+
+	for _, tc := range testcases {
+		if !podFieldsSet.Has(tc.ExpectedKey) {
+			t.Errorf("missing Pod fieldSelector %q", tc.ExpectedKey)
+		}
+		if podFieldsSet.Get(tc.ExpectedKey) != tc.ExpectedValue {
+			t.Errorf("Pod filedSelector %q has got unexpected value %q", tc.ExpectedKey, podFieldsSet.Get(tc.ExpectedKey))
+		}
+	}
+}
 
 func TestMatchPod(t *testing.T) {
 	testCases := []struct {
@@ -357,15 +451,6 @@ func TestCheckLogLocation(t *testing.T) {
 			t.Errorf("expected %v, got %v", tc.expectedErr, err)
 		}
 	}
-}
-
-func TestSelectableFieldLabelConversions(t *testing.T) {
-	apitesting.TestSelectableFieldLabelConversionsOfKind(t,
-		api.Registry.GroupOrDie(api.GroupName).GroupVersion.String(),
-		"Pod",
-		PodToSelectableFields(&api.Pod{}),
-		nil,
-	)
 }
 
 type mockConnectionInfoGetter struct {
