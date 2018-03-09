@@ -123,10 +123,7 @@ func (cache *schedulerCache) FilteredList(podFilter PodFilter, selector labels.S
 }
 
 func (cache *schedulerCache) AssumePod(pod *v1.Pod) error {
-	key, err := getPodKey(pod)
-	if err != nil {
-		return err
-	}
+	key := getPodKey(pod)
 
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
@@ -149,10 +146,7 @@ func (cache *schedulerCache) FinishBinding(pod *v1.Pod) error {
 
 // finishBinding exists to make tests determinitistic by injecting now as an argument
 func (cache *schedulerCache) finishBinding(pod *v1.Pod, now time.Time) error {
-	key, err := getPodKey(pod)
-	if err != nil {
-		return err
-	}
+	key := getPodKey(pod)
 
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
@@ -168,10 +162,7 @@ func (cache *schedulerCache) finishBinding(pod *v1.Pod, now time.Time) error {
 }
 
 func (cache *schedulerCache) ForgetPod(pod *v1.Pod) error {
-	key, err := getPodKey(pod)
-	if err != nil {
-		return err
-	}
+	key := getPodKey(pod)
 
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
@@ -228,10 +219,7 @@ func (cache *schedulerCache) removePod(pod *v1.Pod) error {
 }
 
 func (cache *schedulerCache) AddPod(pod *v1.Pod) error {
-	key, err := getPodKey(pod)
-	if err != nil {
-		return err
-	}
+	key := getPodKey(pod)
 
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
@@ -263,10 +251,7 @@ func (cache *schedulerCache) AddPod(pod *v1.Pod) error {
 }
 
 func (cache *schedulerCache) UpdatePod(oldPod, newPod *v1.Pod) error {
-	key, err := getPodKey(oldPod)
-	if err != nil {
-		return err
-	}
+	key := getPodKey(oldPod)
 
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
@@ -290,10 +275,7 @@ func (cache *schedulerCache) UpdatePod(oldPod, newPod *v1.Pod) error {
 }
 
 func (cache *schedulerCache) RemovePod(pod *v1.Pod) error {
-	key, err := getPodKey(pod)
-	if err != nil {
-		return err
-	}
+	key := getPodKey(pod)
 
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
@@ -319,10 +301,7 @@ func (cache *schedulerCache) RemovePod(pod *v1.Pod) error {
 }
 
 func (cache *schedulerCache) IsAssumedPod(pod *v1.Pod) (bool, error) {
-	key, err := getPodKey(pod)
-	if err != nil {
-		return false, err
-	}
+	key := getPodKey(pod)
 
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
@@ -335,10 +314,7 @@ func (cache *schedulerCache) IsAssumedPod(pod *v1.Pod) (bool, error) {
 }
 
 func (cache *schedulerCache) GetPod(pod *v1.Pod) (*v1.Pod, error) {
-	key, err := getPodKey(pod)
-	if err != nil {
-		return nil, err
-	}
+	key := getPodKey(pod)
 
 	cache.mu.Lock()
 	defer cache.mu.Unlock()

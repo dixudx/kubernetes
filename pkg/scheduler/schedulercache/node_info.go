@@ -19,11 +19,8 @@ package schedulercache
 import (
 	"fmt"
 
-	"github.com/golang/glog"
-
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	clientcache "k8s.io/client-go/tools/cache"
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 	priorityutil "k8s.io/kubernetes/pkg/scheduler/algorithm/priorities/util"
 	"k8s.io/kubernetes/pkg/scheduler/util"
@@ -342,17 +339,10 @@ func (n *NodeInfo) AddPod(pod *v1.Pod) {
 
 // RemovePod subtracts pod information from this NodeInfo.
 func (n *NodeInfo) RemovePod(pod *v1.Pod) error {
-	k1, err := getPodKey(pod)
-	if err != nil {
-		return err
-	}
+	k1 := getPodKey(pod)
 
 	for i := range n.podsWithAffinity {
-		k2, err := getPodKey(n.podsWithAffinity[i])
-		if err != nil {
-			glog.Errorf("Cannot get pod key, err: %v", err)
-			continue
-		}
+		k2 := getPodKey(n.podsWithAffinity[i])
 		if k1 == k2 {
 			// delete the element
 			n.podsWithAffinity[i] = n.podsWithAffinity[len(n.podsWithAffinity)-1]
@@ -361,11 +351,7 @@ func (n *NodeInfo) RemovePod(pod *v1.Pod) error {
 		}
 	}
 	for i := range n.pods {
-		k2, err := getPodKey(n.pods[i])
-		if err != nil {
-			glog.Errorf("Cannot get pod key, err: %v", err)
-			continue
-		}
+		k2 := getPodKey(n.pods[i])
 		if k1 == k2 {
 			// delete the element
 			n.pods[i] = n.pods[len(n.pods)-1]
@@ -478,9 +464,9 @@ func (n *NodeInfo) FilterOutPods(pods []*v1.Pod) []*v1.Pod {
 	for _, p := range pods {
 		if p.Spec.NodeName == node.Name {
 			// If pod is on the given node, add it to 'filtered' only if it is present in nodeInfo.
-			podKey, _ := getPodKey(p)
+			podKey := getPodKey(p)
 			for _, np := range n.Pods() {
-				npodkey, _ := getPodKey(np)
+				npodkey := getPodKey(np)
 				if npodkey == podKey {
 					filtered = append(filtered, p)
 					break
@@ -494,8 +480,10 @@ func (n *NodeInfo) FilterOutPods(pods []*v1.Pod) []*v1.Pod {
 }
 
 // getPodKey returns the string key of a pod.
-func getPodKey(pod *v1.Pod) (string, error) {
-	return clientcache.MetaNamespaceKeyFunc(pod)
+// use unique pod UID as the string key to avoid scheduling conflict when a pod that
+// is being scheduled is deleted and a replacement pod with the same name and namespace is created
+func getPodKey(pod *v1.Pod) string {
+	return string(pod.UID)
 }
 
 // Filter implements PodFilter interface. It returns false only if the pod node name
