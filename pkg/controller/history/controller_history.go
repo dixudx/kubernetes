@@ -250,6 +250,7 @@ func (rh *realHistory) CreateControllerRevision(parent metav1.Object, revision *
 		hash := HashControllerRevision(revision, collisionCount)
 		// Update the revisions name and labels
 		clone.Name = ControllerRevisionName(parent.GetName(), hash)
+		clone.Labels = parent.GetLabels()
 		created, err := rh.client.AppsV1().ControllerRevisions(parent.GetNamespace()).Create(clone)
 		if errors.IsAlreadyExists(err) {
 			*collisionCount++

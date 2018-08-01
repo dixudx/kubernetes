@@ -29,6 +29,7 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	k8s_certificates_v1beta1 "k8s.io/kubernetes/pkg/apis/certificates/v1beta1"
 	"k8s.io/kubernetes/pkg/controller/certificates"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type csrRecognizer struct {
@@ -119,6 +120,9 @@ func (a *sarApprover) authorize(csr *capi.CertificateSigningRequest, rattrs auth
 	}
 
 	sar := &authorization.SubjectAccessReview{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: csr.Labels,
+		},
 		Spec: authorization.SubjectAccessReviewSpec{
 			User:               csr.Spec.Username,
 			UID:                csr.Spec.UID,
