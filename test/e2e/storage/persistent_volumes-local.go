@@ -212,7 +212,7 @@ var _ = utils.SIGDescribe("PersistentVolumes-local ", func() {
 					ginkgo.By("Creating pod1")
 					pod1, pod1Err = createLocalPod(config, testVol, nil)
 					framework.ExpectNoError(pod1Err)
-					if xd, err := json.Marshal(pod1); err != nil {
+					if xd, err := json.Marshal(pod1); err == nil {
 						e2elog.Logf("xddebug pod1: %s", xd)
 					} else {
 						e2elog.Logf("xddebug err: %v", err)
