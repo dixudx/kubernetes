@@ -463,7 +463,7 @@ func containerSucceeded(c *v1.Container, podStatus *kubecontainer.PodStatus) boo
 func liftHostPathDeviceMountToVolumeDevices(pod *v1.Pod, container *v1.Container) {
 	klog.Warningf("[xddebug] pod %#v", pod)
 	klog.Warningf("[xddebug] container before %#v", container)
-	vd := []v1.VolumeDevice{}
+	vd := container.VolumeDevices
 	vm := []v1.VolumeMount{}
 	for _, mount := range container.VolumeMounts {
 		if isHostPathDevice(mount.Name, pod.Spec.Volumes) {
