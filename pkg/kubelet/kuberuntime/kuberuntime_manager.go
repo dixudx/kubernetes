@@ -461,6 +461,8 @@ func containerSucceeded(c *v1.Container, podStatus *kubecontainer.PodStatus) boo
 }
 
 func liftHostPathDeviceMountToVolumeDevices(pod *v1.Pod, container *v1.Container) {
+	klog.Warningf("[xddebug] pod %#v", pod)
+	klog.Warningf("[xddebug] container before %#v", container)
 	vd := []v1.VolumeDevice{}
 	vm := []v1.VolumeMount{}
 	for _, mount := range container.VolumeMounts {
@@ -473,6 +475,8 @@ func liftHostPathDeviceMountToVolumeDevices(pod *v1.Pod, container *v1.Container
 
 	container.VolumeDevices = vd
 	container.VolumeMounts = vm
+
+	klog.Warningf("[xddebug] container after %#v", container)
 }
 
 func isHostPathDevice(volumeName string, volumes []v1.Volume) bool {
