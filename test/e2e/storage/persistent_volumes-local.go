@@ -18,6 +18,7 @@ package storage
 
 import (
 	"fmt"
+	"encoding/json"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -45,6 +46,7 @@ import (
 	e2esset "k8s.io/kubernetes/test/e2e/framework/statefulset"
 	"k8s.io/kubernetes/test/e2e/storage/utils"
 	imageutils "k8s.io/kubernetes/test/utils/image"
+	e2elog "k8s.io/kubernetes/test/e2e/framework/log"
 )
 
 type localTestConfig struct {
@@ -90,15 +92,15 @@ const (
 
 // map to local test resource type
 var setupLocalVolumeMap = map[localVolumeType]utils.LocalVolumeType{
-	GCELocalSSDVolumeType:                   utils.LocalVolumeGCELocalSSD,
-	TmpfsLocalVolumeType:                    utils.LocalVolumeTmpfs,
-	DirectoryLocalVolumeType:                utils.LocalVolumeDirectory,
-	DirectoryLinkLocalVolumeType:            utils.LocalVolumeDirectoryLink,
-	DirectoryBindMountedLocalVolumeType:     utils.LocalVolumeDirectoryBindMounted,
-	DirectoryLinkBindMountedLocalVolumeType: utils.LocalVolumeDirectoryLinkBindMounted,
+	//GCELocalSSDVolumeType:                   utils.LocalVolumeGCELocalSSD,
+	//TmpfsLocalVolumeType:                    utils.LocalVolumeTmpfs,
+	//DirectoryLocalVolumeType:                utils.LocalVolumeDirectory,
+	//DirectoryLinkLocalVolumeType:            utils.LocalVolumeDirectoryLink,
+	//DirectoryBindMountedLocalVolumeType:     utils.LocalVolumeDirectoryBindMounted,
+	//DirectoryLinkBindMountedLocalVolumeType: utils.LocalVolumeDirectoryLinkBindMounted,
 	BlockLocalVolumeType:                    utils.LocalVolumeBlock, // block device in Block mode
-	BlockFsWithFormatLocalVolumeType:        utils.LocalVolumeBlockFS,
-	BlockFsWithoutFormatLocalVolumeType:     utils.LocalVolumeBlock, // block device in Filesystem mode (default in this test suite)
+	//BlockFsWithFormatLocalVolumeType:        utils.LocalVolumeBlockFS,
+	//BlockFsWithoutFormatLocalVolumeType:     utils.LocalVolumeBlock, // block device in Filesystem mode (default in this test suite)
 }
 
 type localTestVolume struct {
@@ -210,6 +212,12 @@ var _ = utils.SIGDescribe("PersistentVolumes-local ", func() {
 					ginkgo.By("Creating pod1")
 					pod1, pod1Err = createLocalPod(config, testVol, nil)
 					framework.ExpectNoError(pod1Err)
+					if xd, err := json.Marshal(pod1); err != nil {
+						e2elog.Logf("xddebug pod1: %s", xd)
+					} else {
+						e2elog.Logf("xddebug err: %v", err)
+					}
+
 					verifyLocalPod(config, testVol, pod1, config.node0.Name)
 
 					writeCmd := createWriteCmd(volumeDir, testFile, testFileContent, testVol.localVolumeType)
@@ -223,7 +231,7 @@ var _ = utils.SIGDescribe("PersistentVolumes-local ", func() {
 					e2epod.DeletePodOrFail(config.client, config.ns, pod1.Name)
 				})
 
-				ginkgo.It("should be able to mount volume and read from pod1", func() {
+				ginkgo.It("should be able to mount volume and read from pod1 [xddebug]", func() {
 					ginkgo.By("Reading in pod1")
 					// testFileContent was written in BeforeEach
 					testReadFileContent(volumeDir, testFile, testFileContent, pod1, testVolType)
